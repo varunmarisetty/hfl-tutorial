@@ -1,0 +1,13 @@
+flwr==1.18.0
+flwr-datasets[vision]==0.5.0
+PyYAML
+torch 
+torchvision 
+matplotlib
+requests
+scipy==1.16.3
+scikit-learn==1.7.2
+streamlit
+pandas
+seaborn
+medmnist
