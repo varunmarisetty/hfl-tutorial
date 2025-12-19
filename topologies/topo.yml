@@ -1,0 +1,46 @@
+Coordinator:
+  kind: server
+  host: localhost
+  port: 5000
+
+Edge-1:
+  kind: edge
+  server:
+    host: localhost
+    port: 5000
+  client:
+    host: localhost
+    port: 5001
+
+Client-1:
+  kind: client
+  host: localhost
+  port: 5001
+  partition_id: 0
+
+Client-2:
+  kind: client
+  host: localhost
+  port: 5001
+  partition_id: 1
+
+Edge-2:
+  kind: edge
+  server:
+    host: localhost
+    port: 5000
+  client:
+    host: localhost
+    port: 5002
+
+Client-3:
+  kind: client
+  host: localhost
+  port: 5002
+  partition_id: 2
+
+Client-4:
+  kind: client
+  host: localhost
+  port: 5002
+  partition_id: 3
