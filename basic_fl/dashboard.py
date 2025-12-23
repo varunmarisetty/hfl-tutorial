@@ -37,7 +37,7 @@ while True:
                 
                 # Show Data Table
                 with st.expander("Raw Data Logs"):
-                    st.dataframe(df.tail(5))
+                    st.dataframe(df)
                     
         except Exception as e:
             st.warning(f"Reading data... {e}")

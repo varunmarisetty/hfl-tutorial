@@ -18,7 +18,7 @@ def get_abs_path(filename):
     """Get the absolute path of a file in the same directory."""
     path = os.path.join(BASE_DIR, filename)
     if not os.path.exists(path):
-        print(f"⚠️ Warning: {filename} not found at {path}")
+        print(f"Warning: {filename} not found at {path}")
     return path
 
 
@@ -33,7 +33,7 @@ def spawn_processes():
     topo_file = get_abs_path(f"topologies/{TOPOLOGY_FILE}")
 
     if not os.path.exists(topo_file):
-        print(f"❌ Error: topo.yml not found at {topo_file}")
+        print(f"Error: topo.yml not found at {topo_file}")
         return
 
     with open(topo_file, "r") as file:
@@ -154,7 +154,7 @@ def spawn_processes():
             )
 
         if not shutil.which("wt"):
-            print("❌ Error: Windows Terminal (wt) is not installed or not in PATH.")
+            print("Error: Windows Terminal (wt) is not installed or not in PATH.")
             return
 
         full_command = f'wt {" ; ".join(commands)}'
@@ -194,7 +194,7 @@ def spawn_processes():
         while procs:
             for name, p in procs[:]:
                 if p.poll() is not None:
-                    print(f"❌ Process {name} has ended")
+                    print(f"Process {name} has ended")
                     procs.remove((name, p))
 
             if len(procs) == 0:
@@ -202,7 +202,7 @@ def spawn_processes():
             time.sleep(5)
 
     else:
-        print(f"❌ Unsupported OS: {current_os}")
+        print(f"Unsupported OS: {current_os}")
 
 
 if __name__ == "__main__":

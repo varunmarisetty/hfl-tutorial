@@ -1,49 +1,53 @@
 import flwr as fl
-import csv
 import os
-from fl_utils import Net, test, load_partition # Used for server-side evaluation if needed
+import config 
+from utils import Net, test, load_client_data
+import torch
 
-# Setup Logging File
-CSV_FILE = "fl_metrics.csv"
-if os.path.exists(CSV_FILE):
-    os.remove(CSV_FILE)
-with open(CSV_FILE, "w") as f:
+torch.manual_seed(seed=config.SEED)
+
+# Use config for file path
+if os.path.exists(config.METRICS_FILE):
+    os.remove(config.METRICS_FILE)
+with open(config.METRICS_FILE, "w") as f:
     f.write("round,accuracy,loss\n")
 
 def write_metrics(rnd, accuracy, loss):
-    with open(CSV_FILE, "a") as f:
+    with open(config.METRICS_FILE, "a") as f: # <--- UPDATED
         f.write(f"{rnd},{accuracy},{loss}\n")
 
-# Custom Strategy to Aggregate Metrics
-class LoggedStrategy(fl.server.strategy.FedAvg):
-    def aggregate_evaluate(self, server_round, results, failures):
-        # Call original aggregation
-        aggregated_loss, aggregated_metrics = super().aggregate_evaluate(server_round, results, failures)
-        
-        if aggregated_metrics:
-            acc = aggregated_metrics['accuracy']
-            print(f"Round {server_round} - Aggregated Accuracy: {acc}")
-            write_metrics(server_round, acc, aggregated_loss)
-            
-        return aggregated_loss, aggregated_metrics
+def evaluate_fn(server_round: int, parameters: fl.common.NDArrays, config_dict: dict):
+    """This function is called by the server after every round."""
+    
+    _, test_loader = load_client_data(0)
+    # Instantiate the model
+    model = Net()
+    
+    # Load the latest global weights into the model
+    params_dict = zip(model.state_dict().keys(), parameters)
+    state_dict = {k: torch.tensor(v) for k, v in params_dict}
+    model.load_state_dict(state_dict, strict=True)
+    
+    # Run the test function on the server's test loader
+    loss, accuracy = test(model, test_loader)
+    
+    # Log results
+    print(f"Server-side evaluation (Round {server_round}): Accuracy: {accuracy:.4f}, Loss: {loss:.4f}")
+    write_metrics(server_round, accuracy, loss)
+    
+    return loss, {"accuracy": accuracy}
 
-# Aggregation function for weighted average
-def weighted_average(metrics):
-    accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
-    examples = [num_examples for num_examples, _ in metrics]
-    return {"accuracy": sum(accuracies) / sum(examples)}
 
-# Start Server
-strategy = LoggedStrategy(
-    evaluate_metrics_aggregation_fn=weighted_average,
-    min_fit_clients=2,  # Wait for 2 clients
-    min_evaluate_clients=2,
-    min_available_clients=2,
-)
-
-print("Starting Server... (Open dashboard.py in another terminal)")
-fl.server.start_server(
-    server_address="0.0.0.0:8080",
-    config=fl.server.ServerConfig(num_rounds=10),
-    strategy=strategy
-)
+if __name__ == "__main__":
+    print("Starting Server...")
+    strategy = fl.server.strategy.FedAvg(
+        evaluate_fn=evaluate_fn,  
+        min_fit_clients=config.NUM_CLIENTS, 
+        min_evaluate_clients=config.NUM_CLIENTS,
+        min_available_clients=config.NUM_CLIENTS,
+    )
+    fl.server.start_server(
+        server_address=config.SERVER_ADDRESS, 
+        config=fl.server.ServerConfig(num_rounds=config.NUM_ROUNDS),
+        strategy=strategy
+    )
