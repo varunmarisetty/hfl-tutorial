@@ -102,7 +102,7 @@ class FlowerClient(fl.client.NumPyClient):
             print("Received initial model from server, starting training...")
         
         if TRAINING_STRATEGY == "fedprox":
-            # --- train with FedAvg ---
+            # --- train with FedProx ---
             print("Training with FedProx")
             losses, accuracies = train_fedprox(
                 self.net, self.trainloader, self.optimizer,

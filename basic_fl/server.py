@@ -42,9 +42,9 @@ if __name__ == "__main__":
     print("Starting Server...")
     strategy = fl.server.strategy.FedAvg(
         evaluate_fn=evaluate_fn,  
-        min_fit_clients=config.NUM_CLIENTS, 
-        min_evaluate_clients=config.NUM_CLIENTS,
-        min_available_clients=config.NUM_CLIENTS,
+        min_fit_clients=config.NUM_CLIENTS, # global model aggregation
+        min_evaluate_clients=config.NUM_CLIENTS, # global model evaluation
+        min_available_clients=config.NUM_CLIENTS, # total clients
     )
     fl.server.start_server(
         server_address=config.SERVER_ADDRESS, 

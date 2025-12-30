@@ -67,6 +67,7 @@ class EdgeStrategy(fl.server.strategy.FedAvg):
         aggregated_parameters = super().aggregate_fit(rnd, results, failures)
         
         if aggregated_parameters is not None:
+            # Store the aggregated model and number of examples in shared state
             self.shared_state["aggregated_model"] = aggregated_parameters
             examples = [r.num_examples for _, r in results]
             self.shared_state["num_examples"] = sum(examples)
@@ -134,10 +135,8 @@ class EdgeStrategy(fl.server.strategy.FedAvg):
 
 
     def configure_fit(self, server_round, parameters, client_manager, **kwargs):
-        """Send per-client zi and global yi to clients."""
         print(f"[Edge Server] Configuring fit for round {server_round}...")
 
-        # Let the base FedAvg select the clients
         fit_instructions = super().configure_fit(
             server_round, parameters, client_manager, **kwargs
         )
@@ -145,6 +144,9 @@ class EdgeStrategy(fl.server.strategy.FedAvg):
         return fit_instructions
 
 def run_edge_server(shared_state, params, round):
+    '''
+    Run the edge server for client aggregation.
+    '''
     strategy = EdgeStrategy(
         shared_state,
         round,
@@ -160,6 +162,9 @@ def run_edge_server(shared_state, params, round):
 
 
 def run_edge_as_client(shared_state):
+    '''
+    Run the edge server as a Flower client to the central server.
+    '''
     class EdgeClient(fl.client.NumPyClient):
         def __init__(self, shared_state):
             self.shared_state = shared_state
@@ -196,13 +201,14 @@ def run_edge_as_client(shared_state):
                 return res, int(num_examples), metrics
             else:
                 # something broke
-                print(f"[Edge Client {args.name}] ⚠️ Edge aggregation failed! Returning parent parameters.")
+                print(f"[Edge Client {args.name}] Edge aggregation failed! Returning parent parameters.")
                 return parameters, 0, {}
                 # default = [np.array([0.0, 0.0, 0.0, 0.0])]
                 # return default, 1, {}
 
 
     print(f"[Edge Client {args.name}] Connecting to central server {args.server}")
+    # Start the edge client process
     fl.client.start_client(
         server_address=args.server, client=EdgeClient(shared_state).to_client()
     )

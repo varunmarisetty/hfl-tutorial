@@ -43,9 +43,9 @@ class FedAvg(fl.server.strategy.FedAvg):
     def __init__(self):
         super().__init__(
             min_fit_clients=int(args.min_edges),
-            min_available_clients=int(args.min_edges),
-            on_fit_config_fn=lambda rnd: {"round": rnd},
-            on_evaluate_config_fn=lambda rnd: {"round": rnd},
+            min_available_clients=int(args.min_edges), # total edges
+            on_fit_config_fn=lambda rnd: {"round": rnd}, # aggregate every round
+            on_evaluate_config_fn=lambda rnd: {"round": rnd}, # evaluate every round
         )
         self.yi_per_group = {}  # store yi for each group/edge
 

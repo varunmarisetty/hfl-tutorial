@@ -18,20 +18,27 @@ class Client(fl.client.NumPyClient):
         return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
 
     def fit(self, parameters, config_dict):
+        # Load the received parameters into the model
         params_dict = zip(self.model.state_dict().keys(), parameters)
         state_dict = {k: torch.tensor(v) for k, v in params_dict}
         self.model.load_state_dict(state_dict, strict=True)
 
+        # Train the model
         train(self.model, self.trainloader, epochs=config.EPOCHS_PER_ROUND)
-        
+
+        # Return updated parameters, number of samples, and metrics
         return self.get_parameters(config={}), len(self.trainloader.dataset), {}
 
     def evaluate(self, parameters, config_dict):
+        # Load the received parameters into the model
         params_dict = zip(self.model.state_dict().keys(), parameters)
         state_dict = {k: torch.tensor(v) for k, v in params_dict}
         self.model.load_state_dict(state_dict, strict=True)
         
+        # Evaluate the model
         loss, accuracy = test(self.model, self.testloader)
+        
+        # Return loss, number of samples, and metrics
         return float(loss), len(self.testloader.dataset), {"accuracy": float(accuracy)}
 
 if __name__ == "__main__":
