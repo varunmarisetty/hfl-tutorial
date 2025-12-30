@@ -11,6 +11,7 @@ SEED = 42
 # Data Parameters
 DATASET_NAME = "albertvillanova/medmnist-v2"
 SUBSET = "pneumoniamnist"
+NUM_CLASSES = 2
 PARTITION_TYPE = "dirichlet"  # 'iid' or 'dirichlet'
 ALPHA = 0.5                   # Heterogeneity for dirichlet
 MIN_PARTITION_SIZE = 10

@@ -25,6 +25,7 @@ class Net(nn.Module):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = torch.sigmoid(self.fc3(x))
+        # Flatten output for binary classification and adjust for multiclass if needed
         return x.view(-1)
 
 # --- 2. Train, Test LOOPS ---
