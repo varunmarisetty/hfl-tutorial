@@ -3,7 +3,6 @@ import pandas as pd
 import glob
 import os
 import altair as alt
-import graphviz
 
 
 st.set_page_config(page_title="HFL Dashboard", layout="wide")
