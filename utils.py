@@ -17,6 +17,7 @@ from flwr_datasets.partitioner import (
     IidPartitioner,
     PathologicalPartitioner,
 )
+import config
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # print(f"Training on {DEVICE}")
@@ -60,7 +61,7 @@ def load_datasets(partition_id: Optional[int] = None):
             num_classes_per_partition=NUM_CLASSES_PER_PARTITION,
         )
 
-    fds = FederatedDataset(dataset=DATASET, partitioners={"train": partitioner})
+    fds = FederatedDataset(dataset=DATASET, subset=config.SUBSET, partitioners={"train": partitioner})
     partition = fds.load_partition(pid)
     # Divide data on each node: 80% train, 20% test
     partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
@@ -104,6 +105,9 @@ def train(net, trainloader, optimizer: torch.optim.Adam, epochs: int, verbose=Fa
     """Train the network on the training set."""
     net.to(DEVICE)
     criterion = torch.nn.CrossEntropyLoss()
+    if config.LOSS_FUNCTION == "binary_cross_entropy":
+        criterion = torch.nn.BCELoss()
+
     net.train()
     losses = []
     accuracies = []
@@ -113,13 +117,25 @@ def train(net, trainloader, optimizer: torch.optim.Adam, epochs: int, verbose=Fa
             images, labels = batch["img"].to(DEVICE), batch["label"].to(DEVICE)
             optimizer.zero_grad()
             outputs = net(images)
-            loss = criterion(outputs, labels)
+            if config.LOSS_FUNCTION == "binary_cross_entropy":
+                # Binary: Labels must be Float and match output shape [N]
+                loss = criterion(outputs, labels.float().view(-1))
+            else:
+                # Multi-class: Labels must be Long (integers)
+                loss = criterion(outputs, labels.long())
             loss.backward()
             optimizer.step()
             # Metrics
             epoch_loss += loss
             total += labels.size(0)
-            correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
+            if config.LOSS_FUNCTION == "binary_cross_entropy":
+                # Binary classification: Shape is [16, 1], Labels is [16]
+                predicted = (outputs > 0.5).float()
+                correct += (predicted == labels.float().view(-1)).sum().item()
+            else:
+                # Multi-class: Shape is [16, NumClasses], Labels is [16]
+                _, predicted = torch.max(outputs.data, 1) 
+                correct += (predicted == labels.long()).sum().item()
         epoch_loss /= len(trainloader.dataset)
         epoch_acc = correct / total
 
@@ -135,6 +151,8 @@ def train_fedprox(net, trainloader, optimizer: torch.optim.Adam, epochs: int, ve
     net.to(DEVICE)
     global_params = [p.clone().detach() for p in net.parameters()]
     criterion = torch.nn.CrossEntropyLoss()
+    if config.LOSS_FUNCTION == "binary_cross_entropy":
+        criterion = torch.nn.BCELoss()
     net.train()
     losses = []
     accuracies = []
@@ -144,7 +162,12 @@ def train_fedprox(net, trainloader, optimizer: torch.optim.Adam, epochs: int, ve
             images, labels = batch["img"].to(DEVICE), batch["label"].to(DEVICE)
             optimizer.zero_grad()
             outputs = net(images)
-            loss = criterion(outputs, labels)
+            if config.LOSS_FUNCTION == "binary_cross_entropy":
+                # Binary: Labels must be Float and match output shape [N]
+                loss = criterion(outputs, labels.float().view(-1))
+            else:
+                # Multi-class: Labels must be Long (integers)
+                loss = criterion(outputs, labels.long())
             # Fedprox
             proximal_term = 0.0
             for local_weights, global_weights in zip(net.parameters(), global_params):
@@ -157,7 +180,14 @@ def train_fedprox(net, trainloader, optimizer: torch.optim.Adam, epochs: int, ve
             # Metrics
             epoch_loss += loss
             total += labels.size(0)
-            correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
+            if config.LOSS_FUNCTION == "binary_cross_entropy":
+                # Binary classification: Shape is [16, 1], Labels is [16]
+                predicted = (outputs > 0.5).float()
+                correct += (predicted == labels.float().view(-1)).sum().item()
+            else:
+                # Multi-class: Shape is [16, NumClasses], Labels is [16]
+                _, predicted = torch.max(outputs.data, 1) 
+                correct += (predicted == labels.long()).sum().item()
         epoch_loss /= len(trainloader.dataset)
         epoch_acc = correct / total
 
@@ -175,16 +205,31 @@ def test(net, testloader):
     """Evaluate the network on the entire test set."""
     net.to(DEVICE)
     criterion = torch.nn.CrossEntropyLoss()
+    if config.LOSS_FUNCTION == "binary_cross_entropy":
+        criterion = torch.nn.BCELoss()
     correct, total, loss = 0, 0, 0.0
     net.eval()
     with torch.no_grad():
         for batch in testloader:
             images, labels = batch["img"].to(DEVICE), batch["label"].to(DEVICE)
             outputs = net(images)
-            loss += criterion(outputs, labels).item()
-            _, predicted = torch.max(outputs.data, 1)
+            if config.LOSS_FUNCTION == "binary_cross_entropy":
+                loss += criterion(outputs, labels.float().view(-1)).item()
+                # Binary Pred: Threshold at 0.5
+                predicted = (outputs > 0.5).float()
+            else:
+                loss += criterion(outputs, labels.long()).item()
+                # Multi-class Pred: Max probability index
+                _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            if config.LOSS_FUNCTION == "binary_cross_entropy":
+                # Binary classification: Shape is [16, 1], Labels is [16]
+                predicted = (outputs > 0.5).float()
+                correct += (predicted == labels.float().view(-1)).sum().item()
+            else:
+                # Multi-class: Shape is [16, NumClasses], Labels is [16]
+                _, predicted = torch.max(outputs.data, 1) 
+                correct += (predicted == labels.long()).sum().item()
     loss /= len(testloader.dataset)
     accuracy = correct / total
     return loss, accuracy

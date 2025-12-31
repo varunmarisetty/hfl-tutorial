@@ -4,8 +4,9 @@ TOPOLOGY_FILE = "topo.yml"
 NUM_CLIENTS = 4
 MIN_CLIENTS_PER_EDGE = 2
 
-MODEL = "lenet_mnist"
-DATASET = "mnist"
+MODEL = "medmnist_cnn"
+DATASET = "albertvillanova/medmnist-v2"
+SUBSET = "pneumoniamnist"
 
 SEED = 42
 
@@ -15,6 +16,7 @@ PARTITIONER = "iid"
 DIRICHLET_ALPHA = 0.1
 NUM_CLASSES_PER_PARTITION = 3  # used in pathological partitioning (limit label)
 NUM_CLASSES = 10  # total number of classes in the dataset
+LOSS_FUNCTION = "binary_cross_entropy"  # options: "cross_entropy", "binary_cross_entropy"
 
 TRAINING_LEARNING_RATE = 5 * 1e-4
 TRAINING_WEIGHT_DECAY = 1e-4
@@ -32,4 +34,4 @@ elif PARTITIONER == "pathological":
     SPLIT=f"{SPLIT}_{NUM_CLASSES_PER_PARTITION}"
 
 
-EXPERIMENT_NAME = f"{DATASET}-{NUM_CLIENTS}c-{MODEL}-{SPLIT}"
+EXPERIMENT_NAME = f"{DATASET.split('/')[-1]}-{NUM_CLIENTS}c-{MODEL}-{SPLIT}"
