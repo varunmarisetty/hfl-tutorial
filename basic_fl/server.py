@@ -35,6 +35,10 @@ def evaluate_fn(server_round: int, parameters: fl.common.NDArrays, config_dict: 
     print(f"Server-side evaluation (Round {server_round}): Accuracy: {accuracy:.4f}, Loss: {loss:.4f}")
     write_metrics(server_round, accuracy, loss)
     
+    # Save the model
+    torch.save(model.state_dict(), config.MODEL_PATH)
+    print(f"Model saved to {config.MODEL_PATH}")
+    
     return loss, {"accuracy": accuracy}
 
 

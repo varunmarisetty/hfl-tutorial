@@ -77,11 +77,15 @@ def get_partitioner():
             self_balancing=True
         )
 
-# Initialize dataset once (global to avoid re-downloading per client in simulation)
+# Initialize dataset once
+import datasets
+datasets.disable_caching()
+
 fds = FederatedDataset(
     dataset=config.DATASET_NAME,
     subset=config.SUBSET,
-    partitioners={"train": get_partitioner()}
+    partitioners={"train": get_partitioner()},
+    trust_remote_code=True,
 )
 
 def load_client_data(cid: int):

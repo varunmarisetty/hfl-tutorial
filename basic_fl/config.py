@@ -1,3 +1,8 @@
+import os
+
+# Get the directory where config.py is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Training Parameters
 NUM_CLIENTS = 2
 NUM_ROUNDS = 10
@@ -17,6 +22,7 @@ ALPHA = 0.5                   # Heterogeneity for dirichlet
 MIN_PARTITION_SIZE = 10
 
 # System Parameters
-METRICS_FILE = "fl_metrics.csv"
+METRICS_FILE = os.path.join(BASE_DIR, "fl_metrics.csv")
+MODEL_PATH = os.path.join(BASE_DIR, "best_model.pth")
 DEVICE = "cpu"
-SERVER_ADDRESS = "0.0.0.0:8080"
+SERVER_ADDRESS = "localhost:8080"
