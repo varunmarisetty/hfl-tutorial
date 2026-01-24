@@ -62,8 +62,9 @@ elif page == "Model Inference":
         uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
 
         if uploaded_file is not None:
+            start_time = time.perf_counter()
             image = Image.open(uploaded_file).convert('L') # Convert to Grayscale
-            st.image(image, caption='Uploaded Image', use_column_width=False, width=150)
+            st.image(image, caption='Uploaded Image', width='content')
             
             # Preprocessing
             transform = Compose([
@@ -72,6 +73,8 @@ elif page == "Model Inference":
                 Normalize(mean=[.5], std=[.5])
             ])
             img_tensor = transform(image).unsqueeze(0).to(config.DEVICE)
+            image_process_endtime = time.perf_counter()
+            image_process_duration = image_process_endtime - start_time
             
             # Load Model
             model = Net()
@@ -82,15 +85,19 @@ elif page == "Model Inference":
                     output = model(img_tensor)
                     prediction = (output > 0.5).float().item()
                     confidence = output.item() if prediction == 1 else 1 - output.item()
-                
+                end_time = time.perf_counter()
+                duration = end_time - start_time
                 # Result Display
-                st.subheader("Prediction Result")
+                st.subheader(" Global Model's Prediction Result")
                 if prediction == 1:
                     st.error(f"**Positive (Pneumonia Detected)**")
                 else:
                     st.success(f"**Negative (Normal)**")
                 
-                st.write(f"Confidence: {confidence:.2%}")
+                st.write(f"Confidence: {confidence:.2%} \
+                         \nInference Time: {duration:.4f} sec \
+                         \n    -Image Processing: {image_process_duration:.4f} sec \
+                         \n    -Model Inference: {duration - image_process_duration:.4f} sec")
                 
             except Exception as e:
                 st.error(f"Error loading model or running inference: {e}")
