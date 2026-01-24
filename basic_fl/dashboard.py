@@ -108,8 +108,9 @@ with tab_inference:
         uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"], key="inference_uploader")
 
         if uploaded_file is not None:
-            image = Image.open(uploaded_file).convert('L')
-            st.image(image, caption='Uploaded Image', width=150)
+            start_time = time.perf_counter()
+            image = Image.open(uploaded_file).convert('L') # Convert to Grayscale
+            st.image(image, caption='Uploaded Image', width='content')
             
             # Preprocessing
             transform = Compose([
@@ -118,29 +119,35 @@ with tab_inference:
                 Normalize(mean=[.5], std=[.5])
             ])
             img_tensor = transform(image).unsqueeze(0).to(config.DEVICE)
+            image_process_endtime = time.perf_counter()
+            image_process_duration = image_process_endtime - start_time
             
             # Load Model
             model = Net()
             try:
                 model.load_state_dict(torch.load(model_path, map_location=torch.device(config.DEVICE)))
                 model.eval()
-                
                 with torch.no_grad():
                     output = model(img_tensor)
                     prediction = (output > 0.5).float().item()
                     confidence = output.item() if prediction == 1 else 1 - output.item()
-                
+                end_time = time.perf_counter()
+                duration = end_time - start_time
                 # Result Display
-                st.subheader("Prediction Result")
+                st.subheader(" Global Model's Prediction Result")
                 if prediction == 1:
                     st.error(f"**Positive (Pneumonia Detected)**")
                 else:
                     st.success(f"**Negative (Normal)**")
                 
-                st.write(f"Confidence: {confidence:.2%}")
+                st.write(f"Confidence: {confidence:.2%} \
+                         \nInference Time: {duration:.4f} sec \
+                         \n    -Image Processing: {image_process_duration:.4f} sec \
+                         \n    -Model Inference: {duration - image_process_duration:.4f} sec")
                 
             except Exception as e:
                 st.error(f"Error running inference: {e}")
+
 
 # --- Global Auto-refresh ---
 if auto_refresh:
