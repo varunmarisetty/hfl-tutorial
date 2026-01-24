@@ -78,7 +78,6 @@ elif page == "Model Inference":
             try:
                 model.load_state_dict(torch.load(config.MODEL_PATH, map_location=torch.device(config.DEVICE)))
                 model.eval()
-                x
                 with torch.no_grad():
                     output = model(img_tensor)
                     prediction = (output > 0.5).float().item()
