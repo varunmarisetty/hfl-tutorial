@@ -134,7 +134,7 @@ with tab_inference:
                 end_time = time.perf_counter()
                 duration = end_time - start_time
                 # Result Display
-                st.subheader(" Global Model's Prediction Result")
+                st.subheader("Prediction Result")
                 if prediction == 1:
                     st.error(f"**Positive (Pneumonia Detected)**")
                 else:
