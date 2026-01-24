@@ -33,15 +33,26 @@ def train(model, train_loader, epochs=1):
     criterion = nn.BCELoss()
     optimizer = optim.SGD(model.parameters(), lr=config.LEARNING_RATE, momentum=config.MOMENTUM)
     model.train()
+    
+    total_loss, total_correct, total_samples = 0.0, 0, 0
+    
     for _ in range(epochs):
         for batch in train_loader:
             images = batch["image"].to(config.DEVICE)
             labels = batch["label"].float().to(config.DEVICE)
             
             optimizer.zero_grad()
-            loss = criterion(model(images), labels)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+            
+            total_loss += loss.item()
+            predicted = (outputs > 0.5).float()
+            total_correct += (predicted == labels).sum().item()
+            total_samples += labels.size(0)
+            
+    return total_loss / len(train_loader), total_correct / total_samples
 
 def test(model, test_loader):
     criterion = nn.BCELoss()
